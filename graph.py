@@ -13,6 +13,7 @@ from langgraph.graph.message import add_messages
 from langchain_core.messages import BaseMessage
 
 from agents.search_agent    import search_agent
+from agents.pdf_agent       import pdf_agent
 from agents.summarizer_agent import summarizer_agent
 from agents.critic_agent    import critic_agent
 from agents.writer_agent    import writer_agent
@@ -83,4 +84,4 @@ if __name__ == "__main__":
     result = run_pipeline(args.query, args.output)
 
     print(f"\n[✔] Research complete!")
-    print(f"[*] Report saved to: {args.output}")
+    print(f"[*] Report saved to: {args.output}")[*] Report saved to: {args.output}")
