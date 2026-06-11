@@ -17,6 +17,7 @@ from agents.pdf_agent       import pdf_agent
 from agents.summarizer_agent import summarizer_agent
 from agents.critic_agent    import critic_agent
 from agents.writer_agent    import writer_agent
+from agents.citation_agent  import citation_agent
 
 
 # ── Shared state passed between every node ───────────────────────────────────
@@ -35,16 +36,20 @@ def build_graph() -> StateGraph:
     g = StateGraph(ResearchState)
 
     g.add_node("search",    search_agent)
+    g.add_node("pdf_fetch", pdf_agent)
     g.add_node("summarize", summarizer_agent)
     g.add_node("critique",  critic_agent)
     g.add_node("write",     writer_agent)
+    g.add_node("citations", citation_agent)
 
     # Linear pipeline for now; swap add_edge → add_conditional_edges later
     g.set_entry_point("search")
-    g.add_edge("search",    "summarize")
+    g.add_edge("search",    "pdf_fetch")
+    g.add_edge("pdf_fetch", "summarize")
     g.add_edge("summarize", "critique")
     g.add_edge("critique",  "write")
-    g.add_edge("write",     END)
+    g.add_edge("write",     "citations")
+    g.add_edge("citations", END)
 
     return g.compile()
 
