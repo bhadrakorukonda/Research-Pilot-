@@ -5,6 +5,8 @@ State machine:  START → search → summarize → critique → write → END
 Each node is an agent that reads/writes shared ResearchState.
 """
 
+import argparse
+import os
 from typing import Annotated, TypedDict, List
 from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages
@@ -19,6 +21,7 @@ from agents.writer_agent    import writer_agent
 # ── Shared state passed between every node ───────────────────────────────────
 class ResearchState(TypedDict):
     query:      str                                   # original user query
+    output_path: str                                  # where to save the final report
     sources:    List[dict]                            # raw results from search
     summaries:  List[str]                             # per-source summaries
     critique:   str                                   # critic's gap analysis
@@ -46,19 +49,38 @@ def build_graph() -> StateGraph:
 
 
 # ── Run helper ────────────────────────────────────────────────────────────────
-def run_pipeline(query: str) -> ResearchState:
+def run_pipeline(query: str, output_path: str = "output/report.md") -> ResearchState:
     graph = build_graph()
     initial_state: ResearchState = {
-        "query":     query,
-        "sources":   [],
-        "summaries": [],
-        "critique":  "",
-        "report":    "",
-        "messages":  [],
+        "query":       query,
+        "output_path": output_path,
+        "sources":     [],
+        "summaries":   [],
+        "critique":    "",
+        "report":      "",
+        "messages":    [],
     }
     return graph.invoke(initial_state)
 
 
 if __name__ == "__main__":
-    result = run_pipeline("What are the latest advances in GNN-based traffic forecasting?")
-    print(result["report"])
+    parser = argparse.ArgumentParser(description="ResearchPilot — LangGraph Research Pipeline")
+    parser.add_argument("--query", required=True, help="The research question to investigate")
+    parser.add_argument("--provider", 
+                        default=os.getenv("LLM_PROVIDER", "ollama"),
+                        choices=["ollama", "anthropic", "openai"],
+                        help="LLM provider (default: ollama or LLM_PROVIDER env var)")
+    parser.add_argument("--output", default="output/report.md", help="Path to write the final report")
+
+    args = parser.parse_args()
+
+    # Set LLM_PROVIDER for tools/llm.py
+    os.environ["LLM_PROVIDER"] = args.provider
+
+    print(f"[*] Starting research for: {args.query}")
+    print(f"[*] Using provider: {args.provider}")
+
+    result = run_pipeline(args.query, args.output)
+
+    print(f"\n[✔] Research complete!")
+    print(f"[*] Report saved to: {args.output}")

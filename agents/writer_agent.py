@@ -38,10 +38,11 @@ def writer_agent(state: dict) -> dict:
     report   = response.content if hasattr(response, "content") else str(response)
 
     # Persist via MCP filesystem tool
+    output_path = state.get("output_path", "output/report.md")
     call_mcp_tool(
         tool_name="write_file",
         arguments={
-            "path":    "output/report.md",
+            "path":    output_path,
             "content": report,
         },
     )
@@ -50,6 +51,6 @@ def writer_agent(state: dict) -> dict:
         **state,
         "report":   report,
         "messages": state["messages"] + [
-            AIMessage(content="[WriterAgent] Report written to output/report.md")
+            AIMessage(content=f"[WriterAgent] Report written to {output_path}")
         ],
     }
