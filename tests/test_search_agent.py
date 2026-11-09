@@ -51,14 +51,11 @@ def test_search_agent_empty_results(initial_state):
         assert "Found 0 sources" in new_state["messages"][0].content
 
 def test_search_agent_malformed_state():
-    # Test with missing keys
+    # State without "messages" is invalid input: search_agent requires it
     state = {"query": "missing sources"}
     with patch("agents.search_agent.call_mcp_tool") as mock_call:
         mock_call.return_value = {"results": []}
-        
-        # This might raise KeyError if not handled, let's see how search_agent is written
-        # search_agent.py: query = state["query"]
-        # It doesn't handle missing 'messages' gracefully in the return: state["messages"] + [...]
+
         with pytest.raises(KeyError):
             search_agent(state)
 

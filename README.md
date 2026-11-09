@@ -22,7 +22,7 @@ graph LR
 3.  **summarize**: Produces concise, multi-point summaries for every ingested source.
 4.  **critique**: Performs literature gap analysis and identifies contradictions.
 5.  **write**: Compiles findings into a professional Markdown report.
-6.  **citations**: Automatically extracts DOIs and arXiv IDs to build a Bibliography.
+6.  **citations**: Appends a `## References` section: every source (title + URL) plus DOIs, arXiv IDs and Author-Year citations found in the full source text.
 
 ---
 
@@ -35,7 +35,7 @@ graph LR
 | **Summarizer** | Converts raw content into structured bullet points. | Configured LLM |
 | **Critic Agent** | Identifies gaps, conflicts, and low-quality sources. | Configured LLM |
 | **Writer Agent** | Generates the final structured Markdown report. | MCP `write_file` |
-| **Citation Agent** | Appends a `## References` section using regex patterns. | MCP `extract_citations` |
+| **Citation Agent** | Appends a `## References` section (sources + extracted citations). | MCP `extract_citations`, `write_file` |
 
 ---
 
@@ -44,9 +44,9 @@ graph LR
 The project includes a custom MCP stdio server (`mcp_server/server.py`) exposing the following capabilities:
 
 - `web_search(query)`: High-quality web search (Brave Search API or Dev Mock).
-- `fetch_pdf(url)`: Robust text extraction from remote PDF URLs using `pypdf`.
+- `fetch_pdf(url)`: Text extraction from remote PDF URLs using `pypdf` (follows redirects, refuses files over 20 MB).
 - `extract_citations(text)`: Pattern matching for DOIs, arXiv IDs, and Author-Year citations.
-- `write_file(path, content)`: Secure local filesystem persistence for generated reports.
+- `write_file(path, content)`: Writes to `path` (relative to the project root). Paths resolving outside the project are rejected.
 
 ---
 
@@ -61,6 +61,7 @@ The project includes a custom MCP stdio server (`mcp_server/server.py`) exposing
 git clone https://github.com/your-repo/ResearchPilot.git
 cd ResearchPilot
 pip install -r requirements.txt
+cp .env.example .env   # optional: provider, model and API keys
 ```
 
 ### 3. Usage
@@ -80,19 +81,21 @@ python graph.py --query "Self-supervised learning in robotics" --provider openai
 | :--- | :--- | :--- | :--- |
 | `--query` | - | *String* | **Required.** The research question. |
 | `--provider`| `LLM_PROVIDER` | `ollama`, `openai`, `anthropic` | LLM backend (Default: `ollama`). |
-| `--output` | - | *Path* | Output file path (Default: `output/report.md`). |
+| `--output` | - | *Path* | Report path relative to the project root (Default: `output/report.md`). |
+
+Other settings (`OLLAMA_MODEL`, `ANTHROPIC_MODEL`, `OPENAI_MODEL`, API keys, `BRAVE_API_KEY`) are read from the environment or a `.env` file; see `.env.example`. The default Anthropic model is `claude-sonnet-5-5`.
 
 ---
 
 ## 📂 Project Layout
 
 ```text
-H:\Random projects\ResearchPilot\
+ResearchPilot/
 ├── agents/             # Agent node implementations
 ├── mcp_server/         # MCP Tool Server (Python SDK)
 ├── tools/              # LLM Factory & MCP Client Wrapper
-├── tests/              # 21 unit/integration test cases
-├── output/             # Generated research reports
+├── tests/              # 35 unit/integration test cases
+├── output/             # Generated research reports (git-ignored)
 ├── graph.py            # LangGraph definition & CLI entrypoint
 └── requirements.txt    # Project dependencies
 ```
@@ -101,12 +104,10 @@ H:\Random projects\ResearchPilot\
 
 ## 🧪 Testing
 
-The project maintains high reliability through a comprehensive test suite of **21 pytest cases**. These tests mock all external MCP and LLM calls to validate agent logic, state transitions, and error recovery.
+The project maintains high reliability through a suite of **35 pytest cases**. Agent tests mock the LLM and MCP calls; `test_mcp_server.py` and `test_mcp_integration.py` exercise the real MCP server and client.
 
 ```bash
-# Ensure PYTHONPATH includes root
-$env:PYTHONPATH="."
-pytest tests/
+python -m pytest tests/
 ```
 
 ---

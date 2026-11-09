@@ -10,6 +10,7 @@ from tools.llm import get_llm
 
 
 def summarizer_agent(state: dict) -> dict:
+    """Summarize each source into bullet points, one LLM call per source."""
     llm = get_llm()
     sources = state["sources"]
     summaries = []

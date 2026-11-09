@@ -8,13 +8,15 @@ from langchain_core.messages import AIMessage
 from tools.mcp_client import call_mcp_tool
 
 def pdf_agent(state: dict) -> dict:
+    """Replace snippets with full PDF text for sources that link to a PDF."""
     sources = state.get("sources", [])
     updated_sources = []
     pdf_count = 0
 
     print(f"[PDFAgent] Checking {len(sources)} sources for PDFs...")
 
-    for source in sources:
+    for original in sources:
+        source = dict(original)  # don't mutate the caller's state
         url = source.get("url", "")
         is_pdf = url.lower().endswith(".pdf") or "arxiv.org/pdf" in url.lower()
 

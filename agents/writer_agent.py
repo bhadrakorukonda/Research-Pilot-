@@ -11,6 +11,7 @@ from tools.mcp_client import call_mcp_tool
 
 
 def writer_agent(state: dict) -> dict:
+    """Compose the Markdown report from summaries + critique and save it via MCP."""
     llm       = get_llm()
     query     = state["query"]
     summaries = state["summaries"]

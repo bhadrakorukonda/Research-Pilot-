@@ -10,6 +10,7 @@ from tools.llm import get_llm
 
 
 def critic_agent(state: dict) -> dict:
+    """Write a gaps/contradictions critique of the summaries into state["critique"]."""
     llm       = get_llm()
     query     = state["query"]
     summaries = state["summaries"]

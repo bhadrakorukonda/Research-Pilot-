@@ -16,6 +16,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 
 
 def get_llm() -> BaseChatModel:
+    """Return the chat model selected by LLM_PROVIDER (default: ollama)."""
     provider = os.getenv("LLM_PROVIDER", "ollama").lower()
 
     if provider == "ollama":
@@ -28,7 +29,7 @@ def get_llm() -> BaseChatModel:
     if provider == "anthropic":
         from langchain_anthropic import ChatAnthropic
         return ChatAnthropic(
-            model=os.getenv("ANTHROPIC_MODEL", "claude-3-5-haiku-20241022"),
+            model=os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5-5"),
             api_key=os.getenv("ANTHROPIC_API_KEY"),
         )
 

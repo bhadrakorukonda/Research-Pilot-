@@ -1,16 +1,19 @@
 """
 ResearchPilot — Core LangGraph Orchestration Graph
 ----------------------------------------------------
-State machine:  START → search → summarize → critique → write → END
+State machine:
+    START → search → pdf_fetch → summarize → critique → write → citations → END
 Each node is an agent that reads/writes shared ResearchState.
 """
 
 import argparse
 import os
 from typing import Annotated, TypedDict, List
+from dotenv import load_dotenv
 from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages
 from langchain_core.messages import BaseMessage
+from langgraph.graph.state import CompiledStateGraph
 
 from agents.search_agent    import search_agent
 from agents.pdf_agent       import pdf_agent
@@ -18,6 +21,8 @@ from agents.summarizer_agent import summarizer_agent
 from agents.critic_agent    import critic_agent
 from agents.writer_agent    import writer_agent
 from agents.citation_agent  import citation_agent
+
+load_dotenv()  # read .env before any LLM_PROVIDER / API-key lookups
 
 
 # ── Shared state passed between every node ───────────────────────────────────
@@ -32,7 +37,8 @@ class ResearchState(TypedDict):
 
 
 # ── Build the graph ───────────────────────────────────────────────────────────
-def build_graph() -> StateGraph:
+def build_graph() -> CompiledStateGraph:
+    """Build and compile the six-node research pipeline."""
     g = StateGraph(ResearchState)
 
     g.add_node("search",    search_agent)
@@ -56,6 +62,7 @@ def build_graph() -> StateGraph:
 
 # ── Run helper ────────────────────────────────────────────────────────────────
 def run_pipeline(query: str, output_path: str = "output/report.md") -> ResearchState:
+    """Run the full pipeline for ``query`` and return the final state."""
     graph = build_graph()
     initial_state: ResearchState = {
         "query":       query,
@@ -86,7 +93,7 @@ if __name__ == "__main__":
     print(f"[*] Starting research for: {args.query}")
     print(f"[*] Using provider: {args.provider}")
 
-    result = run_pipeline(args.query, args.output)
+    run_pipeline(args.query, args.output)
 
-    print(f"\n[✔] Research complete!")
+    print("\n[✔] Research complete!")
     print(f"[*] Report saved to: {args.output}")

@@ -66,3 +66,10 @@ def test_pdf_agent_no_pdfs():
         new_state = pdf_agent(state)
         assert mock_call.call_count == 0
         assert "Processed 0 PDFs" in new_state["messages"][0].content
+
+
+def test_pdf_agent_does_not_mutate_input_sources(state_with_mixed_sources):
+    original_first = dict(state_with_mixed_sources["sources"][0])
+    with patch("agents.pdf_agent.call_mcp_tool", return_value={"content": "text"}):
+        pdf_agent(state_with_mixed_sources)
+    assert state_with_mixed_sources["sources"][0] == original_first

@@ -10,6 +10,7 @@ from tools.mcp_client import call_mcp_tool
 
 
 def search_agent(state: dict) -> dict:
+    """Populate state["sources"] from the MCP web_search tool."""
     query = state["query"]
     print(f"[SearchAgent] Searching for: {query}")
 

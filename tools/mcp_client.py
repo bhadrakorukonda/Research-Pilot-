@@ -2,7 +2,8 @@
 MCP Client
 ----------
 Thin synchronous wrapper that agents use to call the MCP server.
-Spawns the server as a subprocess (stdio transport) and caches the session.
+Each call spawns the server as a subprocess (stdio transport), runs one tool,
+and shuts it down; sessions are not cached.
 
 Usage:
     from tools.mcp_client import call_mcp_tool
