@@ -32,8 +32,8 @@ from pypdf import PdfReader
 app = Server("researchpilot-tools")
 
 BRAVE_API_KEY = os.getenv("BRAVE_API_KEY", "")
-OUTPUT_DIR    = Path("output")
-OUTPUT_DIR.mkdir(exist_ok=True)
+PROJECT_ROOT  = Path(__file__).resolve().parent.parent
+MAX_PDF_BYTES = 20 * 1024 * 1024  # refuse PDFs larger than 20 MB
 
 
 # ── Tool definitions ──────────────────────────────────────────────────────────
@@ -55,11 +55,11 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="write_file",
-            description="Write text content to a file in the output directory.",
+            description="Write text content to a file inside the project directory.",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "path":    {"type": "string", "description": "Relative path under output/"},
+                    "path":    {"type": "string", "description": "File path relative to the project root"},
                     "content": {"type": "string", "description": "File content"},
                 },
                 "required": ["path", "content"],
@@ -152,12 +152,19 @@ async def _web_search(args: dict) -> list[TextContent]:
     return [TextContent(type="text", text=json.dumps({"results": results}))]
 
 
+def _resolve_inside_root(relative_path: str) -> Path:
+    """Resolve ``relative_path`` against the project root, rejecting escapes."""
+    target = (PROJECT_ROOT / relative_path).resolve()
+    if not target.is_relative_to(PROJECT_ROOT):
+        raise ValueError(f"Path escapes the project directory: {relative_path}")
+    return target
+
+
 async def _write_file(args: dict) -> list[TextContent]:
-    target = OUTPUT_DIR / args["path"].lstrip("/")
+    target = _resolve_inside_root(args["path"])
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(args["content"], encoding="utf-8")
-    msg = f"File written: {target}"
-    print(msg, file=sys.stderr)
+    print(f"File written: {target}", file=sys.stderr)
     return [TextContent(type="text", text=json.dumps({"status": "ok", "path": str(target)}))]
 
 
@@ -165,15 +172,19 @@ async def _fetch_pdf(args: dict) -> list[TextContent]:
     url = args["url"]
     print(f"Fetching PDF: {url}", file=sys.stderr)
 
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(url, timeout=30)
-        resp.raise_for_status()
-        pdf_bytes = BytesIO(resp.content)
+    chunks: list[bytes] = []
+    size = 0
+    async with httpx.AsyncClient(follow_redirects=True) as client:
+        async with client.stream("GET", url, timeout=30) as resp:
+            resp.raise_for_status()
+            async for chunk in resp.aiter_bytes():
+                size += len(chunk)
+                if size > MAX_PDF_BYTES:
+                    raise ValueError(f"PDF exceeds {MAX_PDF_BYTES} bytes: {url}")
+                chunks.append(chunk)
 
-    reader = PdfReader(pdf_bytes)
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text() or ""
+    reader = PdfReader(BytesIO(b"".join(chunks)))
+    text = "".join(page.extract_text() or "" for page in reader.pages)
 
     return [TextContent(type="text", text=json.dumps({"url": url, "content": text}))]
 
