@@ -75,3 +75,15 @@ def test_fetch_pdf_rejects_oversized_download(monkeypatch):
     _patch_http(monkeypatch, lambda request: httpx.Response(200, content=b"0" * 500))
     with pytest.raises(ValueError, match="exceeds"):
         _run(server._fetch_pdf({"url": "https://x.test/big.pdf"}))
+
+
+def test_extract_citations_patterns_and_case_sensitivity():
+    text = (
+        "Cites (Smith et al., 2023), (Lee, 2020), but not (see, 2023). "
+        "Also arXiv:2101.12345 and doi:10.1038/s41586-021-03491-6. Dupes: (Lee, 2020)."
+    )
+    out = _run(server._extract_citations({"text": text}))
+    found = json.loads(out[0].text)["citations"]
+    assert found == sorted(
+        ["(Smith et al., 2023)", "(Lee, 2020)", "arXiv:2101.12345", "10.1038/s41586-021-03491-6"]
+    )

@@ -192,25 +192,23 @@ async def _fetch_pdf(args: dict) -> list[TextContent]:
 async def _extract_citations(args: dict) -> list[TextContent]:
     text = args["text"]
 
-    # Patterns:
-    # 1. DOI: 10.\d{4,9}/[-._;()/:A-Z0-9]+
-    # 2. arXiv: arXiv:\d{4}\.\d{4,5}
-    # 3. Author-Year: (Author et al., 2023) or (Author, 2023)
+    # (pattern, flags): DOI/arXiv are case-insensitive; Author-Year must be
+    # case-sensitive or it matches lowercase words such as "(see, 2023)".
+    #   1. DOI:         10.\d{4,9}/...
+    #   2. arXiv:       arXiv:\d{4}.\d{4,5}
+    #   3. Author-Year: (Author et al., 2023) or (Author, 2023)
     patterns = [
-        r"10\.\d{4,9}/[-._;()/:A-Z0-9]+",
-        r"arXiv:\d{4}\.\d{4,5}",
-        r"\([A-Z][a-z]+(?: et al\.)?, \d{4}\)",
+        (r"10\.\d{4,9}/[-._;()/:A-Z0-9]+", re.IGNORECASE),
+        (r"arXiv:\d{4}\.\d{4,5}", re.IGNORECASE),
+        (r"\([A-Z][a-z]+(?: et al\.)?, \d{4}\)", 0),
     ]
 
-    found = []
-    for p in patterns:
-        matches = re.findall(p, text, re.IGNORECASE)
-        found.extend(matches)
+    found: set[str] = set()
+    for pattern, flags in patterns:
+        for match in re.findall(pattern, text, flags):
+            found.add(match.rstrip(".,;:"))  # drop sentence punctuation
 
-    # De-duplicate
-    found = list(set(found))
-
-    return [TextContent(type="text", text=json.dumps({"citations": found}))]
+    return [TextContent(type="text", text=json.dumps({"citations": sorted(found)}))]
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
