@@ -12,7 +12,8 @@ Usage:
 
 import asyncio
 import json
-from functools import lru_cache
+import os
+import sys
 from pathlib import Path
 
 from mcp import ClientSession, StdioServerParameters
@@ -25,8 +26,9 @@ SERVER_SCRIPT = str(Path(__file__).parent.parent / "mcp_server" / "server.py")
 async def _call_tool_async(tool_name: str, arguments: dict) -> dict:
     """Open a fresh stdio session, call one tool, close."""
     server_params = StdioServerParameters(
-        command="python",
+        command=sys.executable,
         args=[SERVER_SCRIPT],
+        env={**os.environ},  # forward BRAVE_API_KEY etc.; SDK default env is a minimal safe list
     )
     async with stdio_client(server_params) as (read, write):
         async with ClientSession(read, write) as session:

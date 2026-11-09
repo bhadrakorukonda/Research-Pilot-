@@ -13,6 +13,7 @@ Run with:
 Agents connect via MCPClient (tools/mcp_client.py).
 """
 
+import asyncio
 import json
 import os
 import re
@@ -203,6 +204,11 @@ async def _extract_citations(args: dict) -> list[TextContent]:
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
+async def main() -> None:
+    """Serve the MCP tools over stdio until the client disconnects."""
+    async with stdio_server() as (read, write):
+        await app.run(read, write, app.create_initialization_options())
+
+
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(stdio_server(app))
+    asyncio.run(main())
