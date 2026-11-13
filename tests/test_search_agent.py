@@ -66,3 +66,17 @@ def test_search_agent_mcp_error(initial_state):
         with pytest.raises(Exception) as excinfo:
             search_agent(initial_state)
         assert "MCP Connection failed" in str(excinfo.value)
+
+
+def test_search_agent_warns_when_results_are_mock(initial_state, capsys):
+    with patch("agents.search_agent.call_mcp_tool") as mock_call:
+        mock_call.return_value = {"mock": True, "results": []}
+        search_agent(initial_state)
+    assert "MOCK" in capsys.readouterr().out
+
+
+def test_search_agent_silent_for_real_results(initial_state, capsys):
+    with patch("agents.search_agent.call_mcp_tool") as mock_call:
+        mock_call.return_value = {"results": []}
+        search_agent(initial_state)
+    assert "MOCK" not in capsys.readouterr().out

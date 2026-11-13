@@ -95,5 +95,5 @@ if __name__ == "__main__":
 
     run_pipeline(args.query, args.output)
 
-    print("\n[✔] Research complete!")
+    print("\n[OK] Research complete!")
     print(f"[*] Report saved to: {args.output}")

@@ -11,6 +11,9 @@
 - `fetch_pdf` follows redirects (arXiv) and refuses downloads over 20 MB.
 - Author-Year citation pattern is case-sensitive and no longer matches ordinary words.
 
+- CLI no longer crashes at the end on Windows consoles (non-ASCII character in final message).
+- Search warns clearly when it falls back to MOCK results (no `BRAVE_API_KEY`).
+
 ### Security
 - `write_file` rejects paths that resolve outside the project directory.
 

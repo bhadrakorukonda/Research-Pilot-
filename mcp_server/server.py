@@ -116,7 +116,9 @@ async def _web_search(args: dict) -> list[TextContent]:
 
     if not BRAVE_API_KEY:
         # ── Dev mock — swap for real Brave call in production ──
+        print("web_search: BRAVE_API_KEY not set, returning MOCK results", file=sys.stderr)
         mock = {
+            "mock": True,
             "results": [
                 {
                     "title":   f"[MOCK] Paper on {query} #{i}",

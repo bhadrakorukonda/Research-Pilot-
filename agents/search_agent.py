@@ -21,6 +21,8 @@ def search_agent(state: dict) -> dict:
     )
 
     sources = raw_results.get("results", [])
+    if raw_results.get("mock"):
+        print("[SearchAgent] WARNING: using MOCK search results - set BRAVE_API_KEY for real sources.")
 
     return {
         **state,
